@@ -1,0 +1,201 @@
+# This file is a modification of the original sdk-migration-config.yaml
+# provided by the OpenTelemetry authors with the following changes:
+# - Heroku resource attributes based on https://opentelemetry.io/docs/specs/semconv/resource/cloud-provider/heroku/
+# - OpenTelemetry Java Agent properties added at .instrumentation.java.
+#
+# The original file can be found at:
+# https://github.com/open-telemetry/opentelemetry-configuration/blob/v0.4.0/examples/sdk-migration-config.yaml
+#
+# ------------------------------------------------------------------
+#
+# This sdk-config.yaml is a typical starting point for configuring the SDK when migrating
+# from environment variable based configuration.
+#
+# This template includes env var substitution references (i.e. ${MY_ENV}) for all spec defined
+# env vars (https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/)
+# which map cleanly to declarative configuration. For example, OTEL_SDK_DISABLED is referenced
+# below, but OTEL_TRACES_EXPORTER is not since it does not map well to the hierarchical
+# structure of declarative configuration.
+#
+# NOTE: With the exception of env var substitution syntax, SDKs ignore environment variables
+# when interpreting config files. For example, if "disabled: ${OTEL_SDK_DISABLED:-false}"
+# is replaced with "disabled: false", then setting the env var OTEL_SDK_DISABLED will have
+# no effect. See https://opentelemetry.io/docs/specs/otel/configuration/data-model/
+# for more information. The following spec defined env vars are NOT referenced and are thus
+# ignored:
+#
+# - OTEL_TRACES_SAMPLER
+# - OTEL_TRACES_SAMPLER_ARG
+# - OTEL_EXPORTER_ZIPKIN_ENDPOINT
+# - OTEL_EXPORTER_ZIPKIN_TIMEOUT
+# - OTEL_EXPORTER_PROMETHEUS_HOST
+# - OTEL_EXPORTER_PROMETHEUS_PORT
+# - OTEL_TRACES_EXPORTER
+# - OTEL_METRICS_EXPORTER
+# - OTEL_LOGS_EXPORTER
+# - OTEL_EXPORTER_OTLP_PROTOCOL, OTEL_EXPORTER_OTLP_{SIGNAL}_PROTOCOL
+# - OTEL_EXPORTER_OTLP_ENDPOINT
+# - OTEL_EXPORTER_OTLP_INSECURE, OTEL_EXPORTER_OTLP_{SIGNAL}_INSECURE
+# - OTEL_EXPORTER_OTLP_CERTIFICATE
+# - OTEL_EXPORTER_OTLP_CLIENT_KEY
+# - OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE
+# - OTEL_EXPORTER_OTLP_COMPRESSION
+# - OTEL_EXPORTER_OTLP_TIMEOUT
+
+# The file format version.
+file_format: "0.4"
+
+# Configure the log level of the internal logger used by the SDK.
+log_level: ${OTEL_LOG_LEVEL:-info}
+
+# Configure resource attributes for all signals.
+resource:
+  # Configure resource attributes. Entries have higher priority than entries from .resource.attributes_list.
+  # Entries must contain .name and .value, and may optionally include .type, which defaults to "string" if not set. The value must match the type. Values for .type include: string, bool, int, double, string_array, bool_array, int_array, double_array.
+  attributes:
+    - name: cloud.provider
+      value: heroku
+    - name: heroku.app.id
+      value: ${HEROKU_APP_ID:-unknown-app-id}
+    #- name: heroku.release.commit
+    #  value: ${HEROKU_BUILD_COMMIT:-unknown-release-commit}
+    #  (HEROKU_SLUG_COMMIT is deprecated per Heroku Dyno Metadata docs)
+    - name: heroku.release.creation_timestamp
+      value: ${HEROKU_RELEASE_CREATED_AT:-unknown-release-created-at}
+    - name: service.name
+      value: ${HEROKU_APP_NAME:-heroku-demo}
+    - name: service.version
+      value: ${HEROKU_RELEASE_VERSION:-v0}
+    - name: service.instance.id
+      value: ${HEROKU_DYNO_ID:-unknown-instance-id}
+
+# Configure tracer provider.
+tracer_provider:
+  # Configure span processors.
+  processors:
+    - # Configure a batch span processor.
+      batch:
+        # Configure delay interval (in milliseconds) between two consecutive exports.
+        schedule_delay: ${OTEL_BSP_SCHEDULE_DELAY:-5000}
+        # Configure maximum allowed time (in milliseconds) to export data.
+        export_timeout: ${OTEL_BSP_EXPORT_TIMEOUT:-30000}
+        # Configure maximum queue size.
+        max_queue_size: ${OTEL_BSP_MAX_QUEUE_SIZE:-2048}
+        # Configure maximum batch size.
+        max_export_batch_size: ${OTEL_BSP_MAX_EXPORT_BATCH_SIZE:-512}
+        # Configure exporter.
+        exporter:
+          # Configure exporter to be OTLP with HTTP transport.
+          otlp_http:
+            # Configure endpoint.
+            endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces
+            # Configure compression.
+            compression: ${OTEL_EXPORTER_OTLP_TRACES_COMPRESSION:-gzip}
+            # Configure max time (in milliseconds) to wait for each export.
+            timeout: ${OTEL_EXPORTER_OTLP_TRACES_TIMEOUT:-10000}
+            # Configure headers.
+            headers_list: ${OTEL_EXPORTER_OTLP_HEADERS}
+
+# Configure meter provider.
+meter_provider:
+  # Configure metric readers.
+  readers:
+    - # Configure a periodic metric reader.
+      periodic:
+        # Configure delay interval (in milliseconds) between start of two consecutive exports.
+        interval: ${OTEL_METRIC_EXPORT_INTERVAL:-60000}
+        # Configure maximum allowed time (in milliseconds) to export data.
+        timeout: ${OTEL_METRIC_EXPORT_TIMEOUT:-30000}
+        # Configure exporter.
+        exporter:
+          # Configure exporter to be OTLP with HTTP transport.
+          otlp_http:
+            # Configure endpoint.
+            endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}/v1/metrics
+            # Configure compression.
+            compression: ${OTEL_EXPORTER_OTLP_METRICS_COMPRESSION:-gzip}
+            # Configure max time (in milliseconds) to wait for each export.
+            timeout: ${OTEL_EXPORTER_OTLP_METRICS_TIMEOUT:-10000}
+            # Configure headers.
+            headers_list: ${OTEL_EXPORTER_OTLP_HEADERS}
+            # Configure temporality preference.
+            temporality_preference: ${OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE:-cumulative}
+            # Configure default histogram aggregation.
+            default_histogram_aggregation: ${OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION:-explicit_bucket_histogram}
+
+# Configure logger provider.
+logger_provider:
+  # Configure log record processors.
+  processors:
+    - # Configure a batch log record processor.
+      batch:
+        # Configure delay interval (in milliseconds) between two consecutive exports.
+        schedule_delay: ${OTEL_BLRP_SCHEDULE_DELAY:-1000}
+        # Configure maximum allowed time (in milliseconds) to export data.
+        export_timeout: ${OTEL_BLRP_EXPORT_TIMEOUT:-30000}
+        # Configure maximum queue size.
+        max_queue_size: ${OTEL_BLRP_MAX_QUEUE_SIZE:-2048}
+        # Configure maximum batch size.
+        max_export_batch_size: ${OTEL_BLRP_MAX_EXPORT_BATCH_SIZE:-512}
+        # Configure exporter.
+        exporter:
+          # Configure exporter to be OTLP with HTTP transport.
+          otlp_http:
+            # Configure endpoint.
+            endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}/v1/logs
+            # Configure compression.
+            compression: ${OTEL_EXPORTER_OTLP_LOGS_COMPRESSION:-gzip}
+            # Configure max time (in milliseconds) to wait for each export.
+            timeout: ${OTEL_EXPORTER_OTLP_LOGS_TIMEOUT:-10000}
+            # Configure headers.
+            headers_list: ${OTEL_EXPORTER_OTLP_HEADERS}
+
+# Configure instrumentation.
+instrumentation:
+  # Configure OpenTelemetry Java Agent. A standard translation process is applied to convert the
+  # flat system properties / env var configuration scheme from https://opentelemetry.io/docs/zero-code/java/agent/
+  # to the structured scheme used by declarative configuration:
+  #
+  # - Resolve properties starting with "otel.instrumentation."
+  # - Strip the "otel.instrumentation." prefix.
+  # - Split the remaining property string on "." character to break into segments
+  # - Starting at .instrumentation.java, follow N-1 segments to resolve the leaf node to read the property from
+  # - Read segment N from the resolved leaf node
+  #
+  # For example, the property "otel.instrumentation.common.default-enabled" is resolved by
+  # reading: .instrumentation.java.common.default-enabled
+  #
+  # Some system properties / env vars cannot be configured via declarative configuration, normally
+  # because they are resolved in the application lifecycle before declarative configuration is
+  # available. The set of unsupported properties includes:
+  # - otel.javaagent.enabled
+  # - otel.javaagent.configuration-file
+  # - otel.javaagent.extensions
+  # - otel.javaagent.logging
+  # - otel.resource.providers.[provider].enabled
+  #
+  # A sample set of OpenTelemetry Java Agent are shown below, with env var substitution references
+  # reflecting agent defaults. For properties that are not referenced, consult the translation
+  # steps discussed above.
+  java:
+    common:
+      default-enabled: true
+    # Configuration java-util-logging instrumentation. Properties adapted from:
+    # https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/java-util-logging/javaagent
+    java-util-logging:
+      enabled: true
+      experimental-log-attributes: true
+    # Configuration logback-appender instrumentation. Properties adapted from:
+    # https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/logback/logback-appender-1.0/javaagent
+    logback-appender:
+      enabled: true
+      # Enable the capture of experimental log attributes thread.name and thread.id
+      experimental-log-attributes: true
+      experimental:
+        # Enable the capture of source code attributes. Note that capturing source code attributes at logging sites might add a performance overhead.
+        capture-code-attributes: true
+        capture-marker-attributes: false
+        capture-key-value-pair-attributes: true
+        capture-logger-context-attributes: false
+        capture-arguments: false
+        capture-mdc-attributes: false

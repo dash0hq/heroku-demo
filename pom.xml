@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.5.0</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.example</groupId>
+	<artifactId>demo</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>demo</name>
+	<description>Heroku Demo project for Spring Boot</description>
+	<properties>
+		<java.version>21</java.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<image>
+						<!-- Tag the image for Heroku's registry -->
+						<name>registry.heroku.com/dash0-heroku-demo/web</name>
+						<!-- Use Paketo base builder (Ubuntu base with CNB support) -->
+						<builder>paketobuildpacks/builder-jammy-base</builder>
+						<!-- Ensure image is built for x86_64 (Heroku dynos run on AMD64) -->
+						<imagePlatform>linux/amd64</imagePlatform>
+						<cleanCache>true</cleanCache>
+						<buildpacks>
+							<!-- Use the Paketo Java buildpack (includes JVM, etc.) -->
+							<buildpack>docker.io/paketobuildpacks/java</buildpack>
+							<!-- Add the Paketo OpenTelemetry Java Agent buildpack
+								 (locked to 2.12.0 for the experimental configuration file format 0.4 support -->
+							<buildpack>docker.io/paketobuildpacks/opentelemetry:2.12.0</buildpack>
+						</buildpacks>
+						<env>
+							<!-- Use Java 21 runtime -->
+							<BP_JVM_VERSION>21</BP_JVM_VERSION>
+							<!-- Enable the OTel agent buildpack -->
+							<BP_OPENTELEMETRY_ENABLED>true</BP_OPENTELEMETRY_ENABLED>
+							<!-- Include our OpenTelemetry config file into the image -->
+							<BP_INCLUDE_FILES>src/main/resources/sdk-config.yaml</BP_INCLUDE_FILES>
+
+							<!-- paketobuildpacks/environment-variables based overrides -->
+							<!-- Limit threads to account for resource-constrained Eco-tier during memory allocation -->
+							<BPE_OVERRIDE_BPL_JVM_THREAD_COUNT>25</BPE_OVERRIDE_BPL_JVM_THREAD_COUNT>
+							<!-- Enable the OpenTelemetry Java agent -->
+							<BPE_DEFAULT_OTEL_JAVAAGENT_ENABLED>true</BPE_DEFAULT_OTEL_JAVAAGENT_ENABLED>
+							<!-- Tell the OpenTelemetry Java agent to load the experimental configuration file at startup -->
+							<BPE_OVERRIDE_OTEL_EXPERIMENTAL_CONFIG_FILE>/workspace/BOOT-INF/classes/sdk-config.yaml</BPE_OVERRIDE_OTEL_EXPERIMENTAL_CONFIG_FILE>
+						</env>
+					</image>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
