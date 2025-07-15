@@ -3,7 +3,7 @@
 
 Heroku makes it easy to deploy and run applications, handling much of the operational overhead. One of the time-consuming aspects of running a system is setting up how to monitor it. That’s why, at Dash0, we're excited to hear that Heroku's next-generation Fir platform natively integrates OpenTelemetry (OTel) for observability. The current Cedar platform does not have these facilities, but it is nevertheless possible to monitor your apps running on it with OpenTelemetry.
 
-This repository provides a demo application to guide you through monitoring a Heroku Cedar app with OpenTelemetry and Cloud Native Buildpacks. For a comprehensive walkthrough with detailed explanations see the full guide on our website; however, all the core steps required to deploy the application and start monitoring are also outlined below.
+This repository provides a demo application to guide you through monitoring a Heroku Cedar app with OpenTelemetry and Cloud Native Buildpacks. For a comprehensive walkthrough with detailed explanations [see the full guide on our website](https://www.dash0.com/guides/monitoring-heroku-applications-with-opentelemetry); however, all the core steps required to deploy the application and start monitoring are also outlined below.
 
 ## What is Heroku's Cedar platform?
 Heroku's Cedar platform provides the runtime environment for your apps by abstracting the operating system, web server, and process management. While Cedar doesn’t natively support Cloud Native Buildpacks, you can still deploy production-grade container images by building them yourself and pushing to Heroku’s Container Registry.
